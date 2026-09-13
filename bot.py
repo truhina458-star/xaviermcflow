@@ -4328,14 +4328,29 @@ def handle_callback(event):
 
 def main():
     global vk, longpoll
-    vk_session = vk_api.VkApi(token=GROUP_TOKEN)
-    vk = vk_session.get_api()
+    logger.info("🚀 Запуск бота...")
+    logger.info(f"GROUP_ID = {GROUP_ID!r} (тип: {type(GROUP_ID).__name__})")
+    logger.info(f"OWNER_ID = {OWNER_ID!r}")
+    logger.info(f"GROUP_TOKEN задан: {bool(GROUP_TOKEN)}, длина: {len(GROUP_TOKEN) if GROUP_TOKEN else 0}")
+
+    try:
+        vk_session = vk_api.VkApi(token=GROUP_TOKEN)
+        vk = vk_session.get_api()
+        logger.info("✅ Авторизация VK API прошла успешно")
+    except Exception as e:
+        logger.error(f"❌ Ошибка авторизации VK API: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        sys.exit(1)
+
     error_handler = VkErrorHandler()
     error_handler.setLevel(logging.ERROR)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     error_handler.setFormatter(formatter)
     logger.addHandler(error_handler)
+
     send_to_owner("✅ Бот успешно запущен и готов к работе!")
+
     try:
         if os.path.exists(RESTART_PEER_FILE):
             with open(RESTART_PEER_FILE, 'r') as f:
@@ -4344,20 +4359,32 @@ def main():
             os.remove(RESTART_PEER_FILE)
     except Exception as e:
         logger.error(f"Ошибка отправки уведомления о перезапуске в беседу: {e}")
+
     try:
+        logger.info(f"Создаю VkBotLongPoll (group_id={GROUP_ID}, wait=45)...")
         longpoll = VkBotLongPoll(vk_session, GROUP_ID, wait=45)
-        print("✅ Бот запущен")
+        logger.info("✅ VkBotLongPoll создан успешно")
     except Exception as e:
-        print(f"❌ Ошибка LongPoll: {e}")
+        logger.error(f"❌ Ошибка LongPoll: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         sys.exit(1)
 
-    init_main_db()
-    cleanup_audience_dbs()
-    auto_repair_audiences()
+    try:
+        init_main_db()
+        logger.info("✅ База данных инициализирована")
+        cleanup_audience_dbs()
+        auto_repair_audiences()
+    except Exception as e:
+        logger.error(f"❌ Ошибка инициализации БД: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        sys.exit(1)
 
     restart_timer = schedule_daily_restart()
 
-    bot_id = -int(GROUP_ID)
+    bot_id = -GROUP_ID
+    logger.info(f"🤖 Бот запущен и готов к работе. bot_id = {bot_id}")
 
     while True:
         try:
