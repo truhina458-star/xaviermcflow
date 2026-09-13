@@ -56,8 +56,15 @@ if not GROUP_TOKEN or not GROUP_ID or not OWNER_ID:
     print(f"Проверьте файл {CONFIG_FILE} или переменные окружения.")
     sys.exit(1)
 
-GROUP_ID = str(GROUP_ID)
-OWNER_ID = str(OWNER_ID)
+# GROUP_ID должен быть ЦЕЛЫМ ЧИСЛОМ для VkBotLongPoll
+try:
+    GROUP_ID = int(str(GROUP_ID).strip())
+except (TypeError, ValueError):
+    print(f"❌ GROUP_ID должен быть числом, получено: {GROUP_ID!r}")
+    sys.exit(1)
+
+# OWNER_ID остаётся строкой, потому что сравнивается со строковым sender_id
+OWNER_ID = str(OWNER_ID).strip()
 # =====================================================================================
 
 import vk_api
